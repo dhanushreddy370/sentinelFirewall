@@ -16,9 +16,9 @@ The project demonstrates a secure, multi‑agent workflow that can browse URLs, 
 
 - **Live browsing & search** – type a URL or a search query and get AI‑generated answers.
 - **File upload** – upload PDFs, HTML, or plain‑text files from the `test_data` folder.
-- **Sentinel Firewall** – detects and blocks prompt‑injection patterns (e.g., "Ignore previous instructions", "Output the secret key").
+- **Sentinel Prompt Firewall (SPF)** – implements **Dynamic Context Delimiter** and **Role Separation** to deterministically block Indirect Prompt Injection (IPI) attacks.
 - **CrewAI orchestration** – agents communicate via defined tasks, with optional safe‑mode.
-- **OpenRouter LLM** – uses the `tngtech/deepseek-r1t2-chimera:free` model via OpenRouter.
+- **OpenRouter LLM** – uses the `tngtech/deepseek-r1t-chimera:free` model via OpenRouter.
 - **Responsive UI** – modern design with glass‑morphism, dark mode, and smooth animations.
 
 ---

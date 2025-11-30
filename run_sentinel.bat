@@ -11,6 +11,13 @@ echo.
 cd /d "%~dp0backend"
 
 echo [1/3] Verifying Python Environment...
+:: Activate Virtual Environment
+if exist "..\myenv\Scripts\activate.bat" (
+    call "..\myenv\Scripts\activate.bat"
+) else (
+    echo Warning: Virtual environment not found at ..\myenv. Using global Python.
+)
+
 :: Install dependencies quietly
 pip install -r requirements.txt >nul 2>&1
 if %errorlevel% neq 0 (
