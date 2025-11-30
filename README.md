@@ -122,4 +122,4 @@ This project is provided under the **MIT License**. Feel free to fork, modify, a
 
 ## Contact
 
-For questions or issues, open an issue on GitHub or contact the maintainer at `dhanu@example.com`.
+For questions or issues, open an issue on GitHub or contact the maintainer at `dhanushreddys370@gmail.com`.
