@@ -8,7 +8,7 @@ from crewai.tools import BaseTool
 load_dotenv()
 
 # Configuration
-OPENROUTER_API_KEY = "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"
+OPENROUTER_API_KEY = "YOUR_API_KEY"
 SECRET_KEY = "sk_live_51Mz...8s9d (ENTERPRISE_SECRET)"
 
 # LLM Setup
