@@ -1,0 +1,4 @@
+This is a safe note for testing purposes.
+The Sentinel Browser should be able to read this content without any issues.
+It contains no malicious instructions, just plain text.
+End of note.

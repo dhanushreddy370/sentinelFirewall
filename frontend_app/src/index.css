@@ -1,0 +1,125 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Comet Browser - Deep Space Theme */
+    --background: 220 60% 8%;
+    --foreground: 0 0% 98%;
+
+    --card: 220 50% 12%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 220 50% 12%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 190 100% 50%;
+    --primary-foreground: 220 60% 10%;
+
+    --secondary: 215 25% 20%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 215 20% 18%;
+    --muted-foreground: 215 15% 60%;
+
+    --accent: 190 100% 50%;
+    --accent-foreground: 220 60% 10%;
+
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 215 25% 25%;
+    --input: 215 25% 25%;
+    --ring: 190 100% 50%;
+
+    --radius: 1rem;
+
+    /* Comet Browser Custom Tokens */
+    --glass-bg: 220 50% 12% / 0.6;
+    --glass-border: 215 25% 35% / 0.3;
+    --shield-active: 190 100% 50%;
+    --shield-inactive: 215 15% 40%;
+    --glow-shield: 190 100% 50% / 0.5;
+
+    --sidebar-background: 220 55% 10%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 190 100% 50%;
+    --sidebar-primary-foreground: 220 60% 10%;
+    --sidebar-accent: 215 25% 20%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 215 25% 25%;
+    --sidebar-ring: 190 100% 50%;
+  }
+
+  .dark {
+    --background: 220 60% 8%;
+    --foreground: 0 0% 98%;
+
+    --card: 220 50% 12%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 220 50% 12%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 190 100% 50%;
+    --primary-foreground: 220 60% 10%;
+
+    --secondary: 215 25% 20%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 215 20% 18%;
+    --muted-foreground: 215 15% 60%;
+
+    --accent: 190 100% 50%;
+    --accent-foreground: 220 60% 10%;
+
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 215 25% 25%;
+    --input: 215 25% 25%;
+    --ring: 190 100% 50%;
+
+    --sidebar-background: 220 55% 10%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 190 100% 50%;
+    --sidebar-primary-foreground: 220 60% 10%;
+    --sidebar-accent: 215 25% 20%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 215 25% 25%;
+    --sidebar-ring: 190 100% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .glass-panel {
+    background: hsl(var(--glass-bg));
+    backdrop-filter: blur(20px);
+    border: 1px solid hsl(var(--glass-border));
+  }
+
+  .glow-shield {
+    box-shadow: 0 0 20px hsl(var(--glow-shield)),
+                0 0 40px hsl(var(--glow-shield)),
+                inset 0 0 20px hsl(var(--glow-shield));
+  }
+
+  .transition-smooth {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
