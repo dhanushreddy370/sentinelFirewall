@@ -5,7 +5,7 @@ setlocal
 taskkill /F /IM uvicorn.exe /T >nul 2>&1
 taskkill /F /FI "WINDOWTITLE eq Sentinel Backend Service" >nul 2>&1
 
-cd /d "%~dp0backend"
+cd /d "%~dp0..\backend"
 
 :: Activate Virtual Environment
 set VENV_PATH=C:\Users\dhanu\OneDrive\Desktop\Trading_algorithm\myenv

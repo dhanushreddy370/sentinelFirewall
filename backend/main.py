@@ -32,6 +32,7 @@ class AgentRequest(BaseModel):
     webpageContent: str
     safeMode: bool
     userConfirmation: bool = False
+    denyAction: bool = False
 
 # --- API ENDPOINTS ---
 
@@ -47,10 +48,6 @@ async def list_files():
 async def get_file_content(filename: str):
     # Check if it's a URL (simple check, in reality frontend encodes it)
     if filename.startswith("http"):
-        # For URLs, we let the Crew handle the browsing, but if frontend expects content here:
-        # We can just return a placeholder saying "Content will be fetched by Agent"
-        # Or we can implement a simple fetch here if needed.
-        # For now, let's return the URL itself as content so the Agent knows what to do.
         return {"content": f"URL_TARGET: {filename}"}
 
     filepath = os.path.join(TEST_DATA_DIR, filename)
@@ -85,16 +82,11 @@ async def upload_file(file: UploadFile = File(...)):
 @app.post("/api/agent/execute")
 async def execute_agent(request: AgentRequest):
     try:
-        print(f"DEBUG: Received webpageContent length: {len(request.webpageContent)}")
-        print(f"DEBUG: First 100 chars: {request.webpageContent[:100]}")
-        crew = SentinelCrew(request.userPrompt, request.webpageContent, request.safeMode, request.userConfirmation)
+        print(f"DEBUG: Processing Agent Request. Confirmation: {request.userConfirmation}, Deny: {request.denyAction}")
+        
+        # Initialize the Crew
+        crew = SentinelCrew(request.userPrompt, request.webpageContent, request.safeMode, request.userConfirmation, request.denyAction)
         result = crew.run()
-        
-        # Parse result to match frontend expectation
-        # The frontend expects: { status: "SUCCESS"|"PROTECTED"|"COMPROMISED", message: "...", details: "..." }
-        
-        # We'll assume the Crew returns a string, and we wrap it.
-        # In a real implementation, the Crew could return a structured dict.
         
         status = "SUCCESS"
         details = "Processed by Sentinel Crew"
@@ -102,7 +94,7 @@ async def execute_agent(request: AgentRequest):
         # Check for HITL Trigger
         if "[[CONFIRMATION_REQUIRED]]" in result:
             status = "CONFIRMATION_REQUIRED"
-            # Extract details: "[[CONFIRMATION_REQUIRED]] Transfer funds..." -> "Transfer funds..."
+            # Extract details
             details = result.replace("[[CONFIRMATION_REQUIRED]]", "").strip()
 
         # Check for our special tag from the Analyst Agent
@@ -114,7 +106,6 @@ async def execute_agent(request: AgentRequest):
 
         elif "THREAT BLOCKED" in result:
              status = "PROTECTED"
-             # Parsing "THREAT BLOCKED: <Reason>"
              if "THREAT BLOCKED:" in result:
                  details = result.split("THREAT BLOCKED:", 1)[1].strip()
              else:

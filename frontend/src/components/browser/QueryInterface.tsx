@@ -17,13 +17,13 @@ export const QueryInterface = ({ shieldActive, onContentUpdate, currentContent }
   const [lastResult, setLastResult] = useState<{ status: string, details: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const executeAgent = async (isConfirmation: boolean) => {
+  const executeAgent = async (isConfirmation: boolean, isDeny: boolean = false) => {
     if (query.trim()) {
       // Get content from prop or fallback to DOM (for safety)
       const articleContent = currentContent || document.getElementById('browser-content')?.innerText || "No content found.";
 
       // Only clear result if starting a NEW request, not confirming an existing one
-      if (!isConfirmation) {
+      if (!isConfirmation && !isDeny) {
         setLastResult(null);
       }
 
@@ -32,7 +32,10 @@ export const QueryInterface = ({ shieldActive, onContentUpdate, currentContent }
       }
 
       setIsProcessing(true);
-      const toastId = toast.loading(isConfirmation ? "Authorizing Action..." : "Agent is thinking...");
+      let toastMsg = "Agent is thinking...";
+      if (isConfirmation) toastMsg = "Authorizing Action...";
+      if (isDeny) toastMsg = "Blocking Action & Processing...";
+      const toastId = toast.loading(toastMsg);
 
       let shouldClearQuery = true;
 
@@ -46,7 +49,8 @@ export const QueryInterface = ({ shieldActive, onContentUpdate, currentContent }
             userPrompt: query,
             webpageContent: articleContent,
             safeMode: shieldActive,
-            userConfirmation: isConfirmation
+            userConfirmation: isConfirmation,
+            denyAction: isDeny
           })
         });
 
@@ -78,6 +82,16 @@ export const QueryInterface = ({ shieldActive, onContentUpdate, currentContent }
             duration: 5000,
             className: "bg-yellow-950 border-yellow-500 text-yellow-200"
           });
+        } else if (data.status === "SANITIZED") {
+          // New status for when a denied action is stripped and we have safe content
+          toast.success("Action Blocked", {
+            description: "Sensitive action removed. Processing safe content...",
+            duration: 3000,
+            className: "bg-blue-950 border-blue-500 text-blue-200"
+          });
+          if (onContentUpdate && data.message) {
+            onContentUpdate(data.message);
+          }
         } else {
           toast.info("Agent Response", {
             description: "Check the main view for the answer.",
@@ -104,6 +118,7 @@ export const QueryInterface = ({ shieldActive, onContentUpdate, currentContent }
 
   const handleSubmit = () => executeAgent(false);
   const handleConfirmAction = () => executeAgent(true);
+  const handleDenyAction = () => executeAgent(false, true);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -235,7 +250,7 @@ export const QueryInterface = ({ shieldActive, onContentUpdate, currentContent }
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={() => setLastResult(null)}
+                  onClick={handleDenyAction}
                   className="bg-yellow-500/10 hover:bg-yellow-500/20 border-yellow-500/50"
                 >
                   Deny

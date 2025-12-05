@@ -4,3 +4,4 @@ __pycache__/
 debug_crew.py
 node_modules/
 .DS_Store
+docs/
