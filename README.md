@@ -17,23 +17,25 @@ The project demonstrates a secure, multi‑agent workflow that can browse URLs, 
 - **Live browsing & search** – type a URL or a search query and get AI‑generated answers.
 - **File upload** – upload PDFs, HTML, or plain‑text files from the `test_data` folder.
 - **Sentinel Prompt Firewall (SPF)** – implements **Dynamic Context Delimiter** and **Role Separation** to deterministically block Indirect Prompt Injection (IPI) attacks.
+- **Human-in-the-Loop (HITL) Logic** - Detects sensitive actions (e.g., financial transfers) and forces user confirmation before proceeding.
 - **CrewAI orchestration** – agents communicate via defined tasks, with optional safe‑mode.
 - **OpenRouter LLM** – uses the `tngtech/deepseek-r1t-chimera:free` model via OpenRouter.
-- **Responsive UI** – modern design with glass‑morphism, dark mode, and smooth animations.
+- **Responsive UI** – modern design with glass‑morphism, dark mode, smooth animations, and dedicated Threat Alerts (Red/Green/Yellow).
+- **App Mode** - Runs as a standalone desktop application window.
 
 ---
 
 ## Prerequisites
 
-- **Windows 10/11** (the project has been developed on Windows).
-- **Python 3.12** (or later).
-- **Node.js 20+** and **npm** (for the frontend).
-- **Git** – to clone the repository.
-- An **OpenRouter API key** (already configured in `.env`).
+- **Windows 10/11**.
+- **Python 3.12+**.
+- **Node.js 20+**.
+- **Git**.
+- An **OpenRouter API key** (in `.env`).
 
 ---
 
-## Setup Instructions
+## Setup & Run (The Easy Way)
 
 1. **Clone the repository**
    ```bash
@@ -41,67 +43,46 @@ The project demonstrates a secure, multi‑agent workflow that can browse URLs, 
    cd sentinelFirewall/sentinel
    ```
 
-2. **Create a Python virtual environment** (recommended)
-   ```bash
-   python -m venv myenv
-   myenv\Scripts\activate   # PowerShell: myenv\Scripts\Activate.ps1
-   ```
-
-3. **Install backend dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-   > The `requirements.txt` file contains `fastapi`, `uvicorn`, `crewai`, `langchain-openai`, `pypdf`, `python‑dotenv`, `requests`, `beautifulsoup4`, etc.
-
-4. **Configure environment variables**
-   - Copy the example file:
+2. **Setup Environment**
+   - Create a virtual environment `myenv` and install dependencies:
      ```bash
-     cp .env.example .env   # or create a .env manually
+     python -m venv myenv
+     myenv\Scripts\activate
+     pip install -r backend/requirements.txt
      ```
-   - Edit `.env` and set:
+   - Create `.env` in `backend/` with `OPENROUTER_API_KEY=your_key`.
+
+3. **Launch the App**
+   - Double-click the **Sentinel** shortcut (if created) or run:
+     ```bash
+     sentinel.bat
      ```
-     OPENROUTER_API_KEY=your_openrouter_key
-     SECRET_KEY=your_secret_key   # used only by the Sentinel firewall
-     ```
+   - This builds the frontend (if needed), starts the backend covertly, and launches the Sentinel Browser in a dedicated app window.
 
-5. **Install frontend dependencies**
-   ```bash
-   cd ../frontend_app
-   npm install
-   ```
+---
 
-6. **Run the backend**
-   ```bash
-   cd ../backend
-   myenv\Scripts\python.exe -m uvicorn main:app --host 0.0.0.0 --port 3000
-   ```
-   The API will be available at `http://localhost:3000`.
+## Usage Guide
 
-7. **Run the frontend (development mode)**
-   ```bash
-   cd ../frontend_app
-   npm run dev
-   ```
-   This starts Vite and opens the UI at `http://localhost:3000` (the same port – Vite proxies API calls to the FastAPI backend).
-
-8. **Using the application**
-   - **Browse a URL**: type a full URL in the address bar and press **Enter**.
-   - **Search**: type a natural‑language query like `search about trading` and click **Execute Agent**.
-   - **Upload a file**: click the **Load Document** dropdown, select a file from `test_data` (e.g., `infected_invoice.pdf`), then ask a question.
-   - The response will appear in the main content area. If the Sentinel firewall blocks content, you’ll see a `THREAT BLOCKED` message.
+- **Safe Browsing**: Type a URL or query (e.g., "Search about cyber attacks").
+- **Threat Detection**:
+  - Load `attack_test.html` and ask "Summarize this".
+  - **Result**: The firewall will detect hidden attacks and show a **Green "THREAT NEUTRALIZED"** alert while still providing the safe summary.
+- **Human-in-the-Loop (HITL)**:
+  - Load `attack_test.html` (which now contains a fake financial transfer instruction).
+  - Ask "Summarize this page".
+  - **Result**: The agent will pause and show a **Yellow "ACTION CONFIRMATION REQUIRED"** alert.
+  - You must click **Authorize Action** to proceed or **Deny** to stop.
 
 ---
 
 ## Testing & Security
 
-- **Test files** are provided in `sentinel/test_data`:
-  - `infected_page.html` – contains a hidden instruction to expose the secret key.
-  - `infected_invoice.pdf` – PDF with a white‑text malicious payload.
-  - `safe_note.txt` – a benign text file.
-- Run the UI and try the following queries to see the firewall in action:
-  - `search about trading`
-  - Load `infected_page.html` and ask `Summarize this document`.
-  - Load `infected_invoice.pdf` and ask `Summarize this invoice`.
+- **Test files** in `sentinel/test_data`:
+  - `attack_test.html` – Comprehensive test suite with:
+    - Hidden text injection ("white-on-white").
+    - Fake system prompts.
+    - Financial action triggers (for HITL demo).
+  - `infected_invoice.pdf` – PDF with hidden payloads.
 
 ---
 
