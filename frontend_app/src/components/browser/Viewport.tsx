@@ -17,7 +17,8 @@ interface ViewportProps {
 export const Viewport = ({ shieldActive }: ViewportProps) => {
   const [files, setFiles] = useState<string[]>([]);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
-  const [fileContent, setFileContent] = useState<string | null>(null);
+  const [sourceContent, setSourceContent] = useState<string | null>(null);
+  const [agentOutput, setAgentOutput] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   // Fetch files on mount
@@ -31,13 +32,15 @@ export const Viewport = ({ shieldActive }: ViewportProps) => {
   const handleLoadFile = async (filename: string) => {
     setLoading(true);
     setSelectedFile(filename);
+    setAgentOutput(null); // Clear previous output when loading new file
     try {
       const res = await fetch(`http://localhost:3000/api/files/${filename}`);
       const data = await res.json();
-      setFileContent(data.content);
+      setSourceContent(data.content);
+      // We do NOT setAgentOutput here, so the "preview" remains hidden
     } catch (err) {
       console.error("Failed to load file", err);
-      setFileContent("Error loading file content.");
+      setSourceContent(null);
     } finally {
       setLoading(false);
     }
@@ -53,7 +56,7 @@ export const Viewport = ({ shieldActive }: ViewportProps) => {
       }}
       transition={{ duration: 0.3 }}
     >
-      {/* ADDRESS BAR (Fake) */}
+      {/* ADDRESS BAR ... (unchanged code for address bar omitted for brevity, logic remains same) */}
       <div className="w-full max-w-2xl mt-8 px-4 flex justify-between items-center gap-4">
         <div className="bg-zinc-900/50 border border-zinc-800 rounded-full px-4 py-2 flex items-center text-zinc-300 text-sm font-mono flex-1 transition-colors focus-within:border-cyan-500/50 focus-within:bg-zinc-900">
           <span className="text-cyan-500 mr-2">🔒</span>
@@ -68,7 +71,6 @@ export const Viewport = ({ shieldActive }: ViewportProps) => {
                 if (input.startsWith('http')) {
                   handleLoadFile(encodeURIComponent(input));
                 } else {
-                  // Assume it's a local file from test_data
                   handleLoadFile(input);
                 }
               }
@@ -76,7 +78,6 @@ export const Viewport = ({ shieldActive }: ViewportProps) => {
           />
         </div>
 
-        {/* FILE LOADER DROPDOWN */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="bg-zinc-900 border-zinc-800 text-zinc-300 hover:bg-zinc-800">
@@ -98,32 +99,39 @@ export const Viewport = ({ shieldActive }: ViewportProps) => {
       </div>
 
       {/* CENTERED QUERY INTERFACE */}
+      {/* We pass 'sourceContent' so the agent can read it, but updates go to 'setAgentOutput' */}
       <div className="w-full max-w-3xl mt-20 px-6 z-30">
-        <QueryInterface shieldActive={shieldActive} onContentUpdate={setFileContent} currentContent={fileContent} />
+        <QueryInterface
+          shieldActive={shieldActive}
+          onContentUpdate={setAgentOutput}
+          currentContent={sourceContent}
+        />
       </div>
 
-      {/* CONTENT AREA */}
-      <div className="w-full max-w-2xl mt-12 px-8 pb-20 opacity-80">
-        <div className="border-t border-zinc-800 pt-8">
-          {loading ? (
-            <div className="flex justify-center items-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-cyan-500" />
-            </div>
-          ) : fileContent ? (
-            <div id="browser-content" className="prose prose-invert prose-lg text-zinc-400 leading-relaxed whitespace-pre-wrap">
-              {fileContent}
-            </div>
-          ) : (
-            <p className="text-zinc-600 italic text-center">
-              No document loaded. Please load a webpage or PDF from the <code>test_data</code> folder to begin testing.
-            </p>
-          )}
+      {/* OUTPUT AREA (Agent Answer) */}
+      {/* Only visible if we have a loading state OR an actual agent output */}
+      {(loading || agentOutput) && (
+        <div className="w-full max-w-2xl mt-12 px-8 pb-20">
+          <div className="border-t border-zinc-800 pt-8">
+            {loading ? (
+              <div className="flex justify-center items-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-cyan-500" />
+                <span className="ml-3 text-zinc-500">Loading Source Content...</span>
+              </div>
+            ) : (
+              <div className="prose prose-invert prose-lg text-zinc-300 leading-relaxed whitespace-pre-wrap bg-zinc-900/30 p-6 rounded-lg border border-zinc-800/50 shadow-inner">
+                <h3 className="text-sm font-bold text-cyan-500 uppercase tracking-widest mb-4 border-b border-zinc-800 pb-2">Agent Response</h3>
+                {agentOutput}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Glow effect when shield is active */}
+      {/* Glow effect */}
       {shieldActive && (
         <motion.div
+          /* ... existing glow effect code ... */
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}

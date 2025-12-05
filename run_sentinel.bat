@@ -7,33 +7,46 @@ echo       SENTINEL BROWSER - SECURE AI AGENT
 echo ==================================================
 echo.
 
-:: Navigate to the backend directory
-cd /d "%~dp0backend"
-
-echo [1/3] Verifying Python Environment...
-:: Activate Virtual Environment
-if exist "..\myenv\Scripts\activate.bat" (
-    call "..\myenv\Scripts\activate.bat"
-) else (
-    echo Warning: Virtual environment not found at ..\myenv. Using global Python.
+:: 1. Build Frontend
+echo [1/4] Building Frontend...
+cd /d "%~dp0frontend_app"
+if not exist "node_modules" (
+    echo Installing frontend dependencies...
+    call npm install
 )
-
-:: Install dependencies quietly
-pip install -r requirements.txt >nul 2>&1
+call npm run build
 if %errorlevel% neq 0 (
-    echo Error: Could not install dependencies. Please ensure Python is installed and added to PATH.
+    echo Error: Frontend build failed.
     pause
     exit /b
 )
 
-echo [2/3] Launching Sentinel Backend...
-:: Start the server in a new minimized window
+:: 2. Setup Backend
+echo [2/4] Setting up Backend...
+cd /d "%~dp0backend"
+
+:: Activate Virtual Environment (User specified path)
+set VENV_PATH=C:\Users\dhanu\OneDrive\Desktop\Trading_algorithm\myenv
+if exist "%VENV_PATH%\Scripts\activate.bat" (
+    call "%VENV_PATH%\Scripts\activate.bat"
+) else (
+    echo Warning: Virtual environment not found at %VENV_PATH%.
+    echo Please ensure the path is correct.
+    pause
+    exit /b
+)
+
+:: Install dependencies
+pip install -r requirements.txt >nul 2>&1
+
+:: 3. Launch Server
+echo [3/4] Launching Sentinel Backend...
+:: Start uvicorn in a new window so this script can continue
 start "Sentinel Server" /MIN python -m uvicorn main:app --host 0.0.0.0 --port 3000
 
-echo [3/3] Waiting for server to initialize...
-timeout /t 4 /nobreak >nul
-
-echo [4/4] Opening Comet Browser Interface...
+:: 4. Open Browser
+echo [4/4] Opening Interface...
+timeout /t 5 /nobreak >nul
 start http://localhost:3000
 
 echo.

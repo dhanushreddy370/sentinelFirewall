@@ -31,6 +31,7 @@ class AgentRequest(BaseModel):
     userPrompt: str
     webpageContent: str
     safeMode: bool
+    userConfirmation: bool = False
 
 # --- API ENDPOINTS ---
 
@@ -86,7 +87,7 @@ async def execute_agent(request: AgentRequest):
     try:
         print(f"DEBUG: Received webpageContent length: {len(request.webpageContent)}")
         print(f"DEBUG: First 100 chars: {request.webpageContent[:100]}")
-        crew = SentinelCrew(request.userPrompt, request.webpageContent, request.safeMode)
+        crew = SentinelCrew(request.userPrompt, request.webpageContent, request.safeMode, request.userConfirmation)
         result = crew.run()
         
         # Parse result to match frontend expectation
@@ -96,19 +97,37 @@ async def execute_agent(request: AgentRequest):
         # In a real implementation, the Crew could return a structured dict.
         
         status = "SUCCESS"
-        if "THREAT BLOCKED" in result or (request.safeMode and "COMPROMISED" not in result):
-             if "COMPROMISED" in result:
-                 status = "COMPROMISED"
-             elif "THREAT BLOCKED" in result:
-                 status = "PROTECTED"
+        details = "Processed by Sentinel Crew"
+
+        # Check for HITL Trigger
+        if "[[CONFIRMATION_REQUIRED]]" in result:
+            status = "CONFIRMATION_REQUIRED"
+            # Extract details: "[[CONFIRMATION_REQUIRED]] Transfer funds..." -> "Transfer funds..."
+            details = result.replace("[[CONFIRMATION_REQUIRED]]", "").strip()
+
+        # Check for our special tag from the Analyst Agent
+        elif "[[THREAT_NEUTRALIZED]]" in result:
+             status = "PROTECTED"
+             details = "Indirect Prompt Injection detected and neutralized."
+             # Remove the tag for the user
+             result = result.replace("[[THREAT_NEUTRALIZED]]", "").strip()
+
+        elif "THREAT BLOCKED" in result:
+             status = "PROTECTED"
+             # Parsing "THREAT BLOCKED: <Reason>"
+             if "THREAT BLOCKED:" in result:
+                 details = result.split("THREAT BLOCKED:", 1)[1].strip()
+             else:
+                 details = "Security protocols engaged. Threat neutralized."
         
-        if "COMPROMISED" in result:
+        if "COMPROMISED" in result and "THREAT BLOCKED" not in result:
             status = "COMPROMISED"
+            details = "System Compromised by Indirect Prompt Injection."
 
         return {
             "status": status,
             "message": result,
-            "details": "Processed by Sentinel Crew"
+            "details": details
         }
     except Exception as e:
         print(f"Error: {e}")

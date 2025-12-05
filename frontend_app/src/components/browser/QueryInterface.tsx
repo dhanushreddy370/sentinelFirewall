@@ -14,21 +14,27 @@ interface QueryInterfaceProps {
 export const QueryInterface = ({ shieldActive, onContentUpdate, currentContent }: QueryInterfaceProps) => {
   const [query, setQuery] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [lastResult, setLastResult] = useState<{ status: string, details: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleSubmit = async () => {
+  const executeAgent = async (isConfirmation: boolean) => {
     if (query.trim()) {
       // Get content from prop or fallback to DOM (for safety)
       const articleContent = currentContent || document.getElementById('browser-content')?.innerText || "No content found.";
 
+      // Only clear result if starting a NEW request, not confirming an existing one
+      if (!isConfirmation) {
+        setLastResult(null);
+      }
+
       if (!articleContent || articleContent === "No content found.") {
         toast.error("DEBUG: Content is missing/empty!");
-        // Proceed anyway to see what happens, or return?
-        // return; 
       }
 
       setIsProcessing(true);
-      const toastId = toast.loading("Agent is thinking...");
+      const toastId = toast.loading(isConfirmation ? "Authorizing Action..." : "Agent is thinking...");
+
+      let shouldClearQuery = true;
 
       try {
         const response = await fetch('http://localhost:3000/api/agent/execute', {
@@ -39,11 +45,13 @@ export const QueryInterface = ({ shieldActive, onContentUpdate, currentContent }
           body: JSON.stringify({
             userPrompt: query,
             webpageContent: articleContent,
-            safeMode: shieldActive
+            safeMode: shieldActive,
+            userConfirmation: isConfirmation
           })
         });
 
         const data = await response.json();
+        setLastResult(data);
 
         toast.dismiss(toastId);
 
@@ -59,6 +67,17 @@ export const QueryInterface = ({ shieldActive, onContentUpdate, currentContent }
             duration: 5000,
             className: "bg-green-950 border-green-500 text-green-200"
           });
+
+          if (onContentUpdate && data.message) {
+            onContentUpdate(data.message);
+          }
+        } else if (data.status === "CONFIRMATION_REQUIRED") {
+          shouldClearQuery = false; // Keep query for re-submission
+          toast.warning("Authorization Required", {
+            description: "The agent requires your approval to proceed.",
+            duration: 5000,
+            className: "bg-yellow-950 border-yellow-500 text-yellow-200"
+          });
         } else {
           toast.info("Agent Response", {
             description: "Check the main view for the answer.",
@@ -73,13 +92,18 @@ export const QueryInterface = ({ shieldActive, onContentUpdate, currentContent }
       } catch (e) {
         toast.dismiss(toastId);
         toast.error("Connection Failed", { description: "Could not reach Sentinel Backend." });
+        shouldClearQuery = false;
       } finally {
         setIsProcessing(false);
+        if (shouldClearQuery) {
+          setQuery("");
+        }
       }
-
-      setQuery("");
     }
   };
+
+  const handleSubmit = () => executeAgent(false);
+  const handleConfirmAction = () => executeAgent(true);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -102,7 +126,6 @@ export const QueryInterface = ({ shieldActive, onContentUpdate, currentContent }
         });
         toast.dismiss(toastId);
         toast.success("File Uploaded", { description: `${file.name} is ready to load.` });
-        // Ideally, trigger a refresh of the file list in Viewport, but for now user can just open dropdown
       } catch (err) {
         toast.dismiss(toastId);
         toast.error("Upload Failed");
@@ -170,6 +193,65 @@ export const QueryInterface = ({ shieldActive, onContentUpdate, currentContent }
           </Button>
         </div>
       </div>
+
+      {/* Persistent Attack Report Display */}
+      {(lastResult?.status === "PROTECTED" || lastResult?.status === "COMPROMISED" || lastResult?.status === "CONFIRMATION_REQUIRED") && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={`mt-4 p-4 rounded-lg border flex items-start gap-4 ${lastResult.status === "PROTECTED"
+              ? "bg-green-950/30 border-green-500/50 text-green-200"
+              : lastResult.status === "CONFIRMATION_REQUIRED"
+                ? "bg-yellow-950/30 border-yellow-500/50 text-yellow-200"
+                : "bg-red-950/30 border-red-500/50 text-red-200"
+            }`}
+        >
+          <div className={`p-2 rounded-full ${lastResult.status === "PROTECTED" ? "bg-green-500/20"
+              : lastResult.status === "CONFIRMATION_REQUIRED" ? "bg-yellow-500/20"
+                : "bg-red-500/20"
+            }`}>
+            {lastResult.status === "PROTECTED" ? <Shield className="h-6 w-6" />
+              : lastResult.status === "CONFIRMATION_REQUIRED" ? <ShieldAlert className="h-6 w-6" />
+                : <ShieldAlert className="h-6 w-6" />}
+          </div>
+          <div className="w-full">
+            <h3 className="font-bold text-lg mb-1">
+              {lastResult.status === "PROTECTED" ? "Threat Neutralized"
+                : lastResult.status === "CONFIRMATION_REQUIRED" ? "Action Confirmation Required"
+                  : "Security Breach"}
+            </h3>
+            <p className="text-sm opacity-90 leading-relaxed mb-3">
+              {lastResult.details}
+            </p>
+
+            {lastResult.status === "PROTECTED" && (
+              <div className="mt-2 text-xs opacity-70 bg-black/20 p-2 rounded">
+                <strong>Sentinel Forensics:</strong> The firewall intercepted a malicious instruction attempting to override system protocols.
+              </div>
+            )}
+
+            {lastResult.status === "CONFIRMATION_REQUIRED" && (
+              <div className="flex gap-3 justify-end mt-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setLastResult(null)}
+                  className="bg-yellow-500/10 hover:bg-yellow-500/20 border-yellow-500/50"
+                >
+                  Deny
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleConfirmAction}
+                  className="bg-yellow-500 text-black hover:bg-yellow-400"
+                >
+                  Authorize Action
+                </Button>
+              </div>
+            )}
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 };
